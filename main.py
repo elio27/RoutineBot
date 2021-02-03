@@ -198,9 +198,9 @@ async def on_message(message):
             value=
             f"Author: [{author}](https://routinehub.co/user/{author})\nHearts: {hearts}\nDownloads: {downloads}\nLast version: {last_version}\nPublished on : {release_date}\n\n[Download {name}]({url})"
         )
-
-        await message.channel.send(file=file, embed=embed)
         await loading.delete()
+        await message.channel.send(file=file, embed=embed)
+        os.remove("img.png")
 
       else:
         await loading.delete()
