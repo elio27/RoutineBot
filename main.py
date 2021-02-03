@@ -122,6 +122,7 @@ async def on_message(message):
         "\n\n**!rh invite**\n*Returns the [link](https://bit.ly/rh-bot) to invite me on your server !*\n\n**!rh help**\n*Returns the help page you are reading*\n\n\n"
     )
     embed.add_field(name="**Credits :**", value="Here is a little message to thank those who contributed to RoutineBot, one way or another, by reporting bugs or suggested improvements.\nI am talking about <@360097325730889730>, <@575317218955493376>, <@618082876730376202>, <@714777087801819237>, <@642358695652753418> and <@293502958950154240>.")
+    embed.add_field(name="Other links:", value="[Github repo](https://github.com/elio27/RoutineBot)")
     await message.channel.send(embed=embed)
 
   elif message.content.startswith("!rh invite"):
