@@ -21,11 +21,6 @@ def is_valid(rhid):
 	return json_data['result'] == "success"
 
 
-def get_name(rhid):
-	response = requests.get(f"https://routinehub.co/shortcut/{rhid}")
-	ex = '(?<=<h3 class="title is-3">).*(?=</h3>)'
-	return re.findall(ex, response.text)[0]
-
 def search(name, mode=0):
   name = name.replace(" ", "+")
   response = requests.get(f'https://routinehub.co/search/?q={name}')
@@ -87,8 +82,8 @@ async def on_raw_reaction_add(payload):
 
 	try:
 		id = re.findall("(?<=message_id=).*(?=\))", msg.content)[0].replace(
-		    ").", "")
-		id = id.replace(id[-1], "")
+		    ")..", "")
+
 
 	except IndexError:
 		id = re.findall("(?<=message_id=).*(?=\)\*)",
@@ -124,7 +119,7 @@ async def on_message(message):
           value=
           "\n\n**!rh invite**\n*Returns the [link](https://bit.ly/rh-bot) to invite me on your server !*\n\n**!rh help**\n*Returns the help page you are reading*\n\n\n"
       )
-      embed.add_field(name="**Credits :**", value="Here is a little message to thank those who contributed to RoutineBot, one way or another, by reporting bugs or suggested improvements.\nI am talking about <@360097325730889730>, <@575317218955493376>, <@618082876730376202>, <@714777087801819237>, <@642358695652753418> and <@293502958950154240>.")
+      embed.add_field(name="**Credits :**", value="Here is a little message to thank those who contributed to RoutineBot, one way or another, by reporting bugs or suggested improvements.\nI am talking about <@360097325730889730>, <@575317218955493376>, <@618082876730376202>, <@714777087801819237>, <@776983528821882911>, <@642358695652753418> and <@293502958950154240>.")
       embed.add_field(name="Other links:", value="[Github repo](https://github.com/elio27/RoutineBot)")
       await message.channel.send(embed=embed)
 
@@ -222,28 +217,18 @@ async def on_message(message):
       user = message.content.replace("!rh user ", "")
       if user:
         user_url = f"https://routinehub.co/user/{user}"
+        
+        error = """<h3 class="title is-3">
+Error: Profile not found
+</h3>"""
+
         response = requests.get(user_url)
-        if not "Error: Profile not found" in response.text:
+
+        if not error in response.text:
 
           loading = await message.channel.send("Routinebot is loading your request")
 
           async with message.channel.typing():
-
-            ex = "(?<=<p>Shortcuts: ).*(?=</p>)"
-            sc = re.findall(ex, response.text)[0]
-
-            ex = "(?<=<strong>).*(?=</strong>)"
-            username = re.findall(ex, response.text)[0]
-
-            ex = "(?<=p>Downloads: ).*(?=</p>)"
-            dls = re.findall(ex, response.text)[0]
-
-            ex = '(?<=<img class="is-rounded" src=").*(?=" alt="Profile picture for)'
-            
-            pp_url = re.findall(ex, response.text)
-            
-
-          #  Hearts
 
             ex = '(?<=<i class="fas fa-heart"></i></span>\n).*(?=\n</small>)'
             hearts_list = re.findall(ex, response.text)
@@ -258,12 +243,25 @@ async def on_message(message):
             pages = re.findall(ex, response.text)
 
             for page in pages:
-              response = requests.get(f"{user_url}?page={page}")
-              ex = '(?<=<i class="fas fa-heart"></i></span>\n).*(?=\n</small>)'
-              hearts_list = re.findall(ex, response.text)
-              for num in hearts_list:
-                num = int(num)
-                hearts += num
+              async with session.get(f"{user_url}?page={page}") as resp:
+                ex = '(?<=<i class="fas fa-heart"></i></span>\n).*(?=\n</small>)'
+                hearts_list = re.findall(ex, await resp.text())
+                for num in hearts_list:
+                  num = int(num)
+                  hearts += num
+
+            ex = "(?<=<p>Shortcuts: ).*(?=</p>)"
+            sc = re.findall(ex, response.text)[0]
+
+            ex = "(?<=<strong>).*(?=</strong>)"
+            username = re.findall(ex, response.text)[0]
+
+            ex = "(?<=p>Downloads: ).*(?=</p>)"
+            dls = re.findall(ex, response.text)[0]
+
+            ex = '(?<=<img class="is-rounded" src=").*(?=" alt="Profile picture for)'
+            
+            pp_url = re.findall(ex, response.text)
 
 
             embed = discord.Embed(title=f"**{username}**", colour=discord.Colour(0x299d68), url=user_url)
