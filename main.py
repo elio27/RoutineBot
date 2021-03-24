@@ -9,9 +9,10 @@ from io import BytesIO
 
 client = discord.Client()
 
-def footer(message):
-	footer = f"*Automatic reply from @RoutineBot to {message.author.name} (message_id={message.id})*"
-	return footer
+def footer(message, mode=0):
+  if mode == 0:
+    footer = f"Automatic reply from @RoutineBot to {message.author.name} (message_id={message.id})"
+    return footer
 
 
 def is_valid(rhid):
@@ -86,7 +87,7 @@ async def on_raw_reaction_add(payload):
 
 
 	except IndexError:
-		id = re.findall("(?<=message_id=).*(?=\)\*)",
+		id = re.findall("(?<=message_id=).*(?=\))",
 		                msg.embeds[0].footer.text)[0]
 
 	msbis = await channel.fetch_message(id)
@@ -128,21 +129,25 @@ async def on_message(message):
 
     elif message.content.startswith("!rh search"):
       name = message.content.replace("!rh search ", "")
-      loading = await message.channel.send("Routinebot is loading your request")
-      async with message.channel.typing():
-        mess = search(name, mode=1)
-        await loading.delete()
-        embed = discord.Embed(colour=discord.Colour(0x299d68))
-        embed.set_footer(
-              text=f"{footer(message)}",
-              icon_url=
-              "https://cdn.discordapp.com/avatars/792855846240518174/946eb210985c413d6b1429d49f9168fc.png?size=512")
-        if not f"RoutineBot cannot find any result for {name}" in mess:
-          embed.add_field(name=f"Results for {name} :",value=mess)
-        else:
-          embed.add_field(name="<:error:805061336185831434> Error <:error:805061336185831434>",value=mess)
+      if name:
+        loading = await message.channel.send("Routinebot is loading your request")
+        async with message.channel.typing():
+          mess = search(name, mode=1)
+          await loading.delete()
+          embed = discord.Embed(colour=discord.Colour(0x299d68))
+          embed.set_footer(
+                text=f"{footer(message)}",
+                icon_url=
+                "https://cdn.discordapp.com/avatars/792855846240518174/946eb210985c413d6b1429d49f9168fc.png?size=512")
+          if not f"RoutineBot cannot find any result for {name}" in mess:
+            embed.add_field(name=f"Results for {name} :",value=mess)
+          else:
+            embed.add_field(name="<:error:805061336185831434> Error <:error:805061336185831434>",value=mess)
         
-      await message.channel.send(embed=embed)
+        await message.channel.send(embed=embed)
+        
+      else:
+        
   
 
     elif message.content.startswith("!rh shortcut"):
@@ -175,17 +180,23 @@ async def on_message(message):
             url = json_data["URL"]
             embed = discord.Embed(
                 colour=discord.Colour(0x299d68))
-            icon_url = url.replace("/shortcuts/", "/shortcuts/api/records/")
 
-            try:
-              icon_url = json.loads(requests.get(icon_url).text)["fields"]["icon"]["value"]["downloadURL"]
-            except:
-              icon_url = "https://media.discordapp.net/attachments/752322547877675058/805136237844234290/Sa6a0Ia.png"
+            if not os.path.exists(f"{rhid}.png"):
+              icon_url = url.replace("/shortcuts/", "/shortcuts/api/records/")
 
-          riri = requests.get(icon_url)
-          i = Image.open(BytesIO(riri.content))
-          i.save("img.png", format=None)
-          file = discord.File("img.png", filename="img.png")
+              try:
+                icon_url = json.loads(requests.get(icon_url).text)["fields"]["icon"]["value"]["downloadURL"]
+              except:
+                icon_url = "https://media.discordapp.net/attachments/752322547877675058/805136237844234290/Sa6a0Ia.png"
+
+              riri = requests.get(icon_url)
+              i = Image.open(BytesIO(riri.content))
+              i.save(f"{rhid}.png", format=None)
+
+              file = discord.File(f"{rhid}.png", filename="img.png")
+            else:
+              file = discord.File(f"{rhid}.png", filename="img.png")
+
           embed.set_thumbnail(url="attachment://img.png")
 
           embed.set_footer(
@@ -201,7 +212,6 @@ async def on_message(message):
           )
           await loading.delete()
           await message.channel.send(file=file, embed=embed)
-          os.remove("img.png")
 
         else:
           await loading.delete()
@@ -299,6 +309,48 @@ Error: Profile not found
         )
 
       await message.channel.send(embed=embed)
+    
+    elif  "https://www.icloud.com/shortcuts/" in message.content:
+      
+      sc_url = re.sub(".*(?=https)|(?= ).*", "", message.content)
+
+      api_url = sc_url.replace("/shortcuts/", "/shortcuts/api/records/")
+
+      api_response = json.loads(requests.get(api_url).text)
+
+      name = api_response["fields"]["name"]["value"]
+
+      icon_url = api_response["fields"]["icon"]["value"]["downloadURL"]
+
+      riri = requests.get(icon_url)
+      i = Image.open(BytesIO(riri.content))
+      i.save("temp.png", format=None)
+
+      file = discord.File("temp.png", filename="img.png")
+
+
+      embed = discord.Embed(
+        colour=discord.Colour(0x299d68)
+      )
+
+      embed.set_thumbnail(url="attachment://img.png")
+
+      embed.set_footer(
+          text=f"{footer(message, mode=0)}",
+          icon_url=
+          "https://cdn.discordapp.com/avatars/792855846240518174/946eb210985c413d6b1429d49f9168fc.png?size=512"
+      )
+
+      embed.add_field(
+          name=f"{name}",
+          value=
+          f"Sent by: <@!{message.author.id}>\n\n[Download {name}]({sc_url})"
+      )
+
+      await message.channel.send(file=file, embed=embed)
+      os.remove("temp.png")
+
+
 
 keep_alive()
 client.run(os.getenv("TOKEN"), bot=True)
