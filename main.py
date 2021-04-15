@@ -1,13 +1,38 @@
 import discord
-import re, os, requests, json
+import re, os, requests, json, threading, time
+from replit import db
 from keep_alive import keep_alive
 import difflib
+import asyncio
 import html
 import aiohttp
 from PIL import Image
 from io import BytesIO
 
 client = discord.Client()
+
+
+def isdown():
+  response = requests.get("https://routinehub.co/")
+   
+  return response.status_code == "504"
+
+
+async def check_status():
+
+  while True:
+    if isdown():
+
+      await client.change_presence(activity=discord.Game(name="RoutineHub is currently down !"))
+
+    else:
+
+      await client.change_presence(activity=discord.Game(name=f"!rh help in {len(client.guilds)} servers"))
+
+    time.sleep(60)
+
+
+status_loop = threading.Thread(target=asyncio.run, args=(check_status(),))
 
 def footer(message, mode=0):
   if mode == 0:
@@ -58,14 +83,15 @@ def search(name, mode=0):
     return message
 
 
+
 @client.event
 async def on_ready():
+
   print("Present in:\n")
   for guild in client.guilds:
     print(f"{guild.name}")
   print("-----------------")
-  await client.change_presence(activity=discord.Game(name=f"!rh help in {len(client.guilds)} servers"))
-
+  status_loop.start()
 
 @client.event
 async def on_member_join(member):
@@ -128,8 +154,10 @@ async def on_message(message):
       await message.channel.send("https://bit.ly/rh-bot\n")
 
     elif message.content.startswith("!rh search"):
-      name = message.content.replace("!rh search ", "")
-      if name:
+      ex = "(?<=!rh search ).*"
+      name = re.findall(ex,message.content)
+      if len(name):
+        name = name[0]
         loading = await message.channel.send("Routinebot is loading your request")
         async with message.channel.typing():
           mess = search(name, mode=1)
@@ -147,10 +175,16 @@ async def on_message(message):
         await message.channel.send(embed=embed)
         
       else:
-        
+        embed = discord.Embed(colour=discord.Colour(0x299d68))
+        embed.set_footer(
+            text=f"{footer(message)}",
+            icon_url=
+            "https://cdn.discordapp.com/avatars/792855846240518174/946eb210985c413d6b1429d49f9168fc.png?size=512")
+        embed.add_field(name="<:error:805061336185831434> Error <:error:805061336185831434>",value="Please enter at least one keyword.")
+        await message.channel.send(embed=embed)
   
 
-    elif message.content.startswith("!rh shortcut"):
+    elif message.content.startswith("!rh shortcut") and not message.content.startswith("!rh shortcuts"):
       rhid = message.content.replace("!rh shortcut ", "")
       loading = await message.channel.send("Routinebot is loading your request")
       async with message.channel.typing():
@@ -226,6 +260,20 @@ async def on_message(message):
     elif message.content.startswith("!rh user"):
       user = message.content.replace("!rh user ", "")
       if user:
+        if "<@!" in user:
+            try:
+                id = re.findall("[0-9]*[0-9]", user)
+                id = id[0]
+            except IndexError:
+                await message.channel.send("Error: You should ping or put the discord id of the user you want to look at.")
+                return 0
+
+            if id in db.keys():
+                user = db[id]
+            else:
+                await message.channel.send("Error: The user isn't registered in the database. Contact  <@!424188671332319233> if you want to be added to the database.")
+                return 0
+    
         user_url = f"https://routinehub.co/user/{user}"
         
         error = """<h3 class="title is-3">
@@ -296,7 +344,7 @@ Error: Profile not found
 
           embed.add_field(name="<:error:805061336185831434> Error <:error:805061336185831434>", value="User not found.\n\n")
 
-          await message.channel.send(embed=embed)
+          await message.channel.send(embed=embed)   
 
     elif message.content.startswith("!rh"):
       embed = discord.Embed(colour=discord.Colour(0x690a6))
@@ -309,7 +357,7 @@ Error: Profile not found
         )
 
       await message.channel.send(embed=embed)
-    
+
     elif  "https://www.icloud.com/shortcuts/" in message.content:
       
       sc_url = re.sub(".*(?=https)|(?= ).*", "", message.content)
@@ -349,6 +397,7 @@ Error: Profile not found
 
       await message.channel.send(file=file, embed=embed)
       os.remove("temp.png")
+
 
 
 
