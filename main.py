@@ -15,7 +15,7 @@ client = discord.Client()
 def isdown():
   response = requests.get("https://routinehub.co/")
    
-  return response.status_code == "504"
+  return response.status_code != "200"
 
 
 async def check_status():
@@ -23,7 +23,7 @@ async def check_status():
   while True:
     if isdown():
 
-      await client.change_presence(activity=discord.Game(name="RoutineHub is currently down !"))
+      await client.change_presence(activity=discord.Game(name="RoutineHub is currently down!"))
 
     else:
 
@@ -98,7 +98,7 @@ async def on_member_join(member):
 	channel = client.get_channel(503976650996842507)
 	if channel.guild == member.guild:
 	  await channel.send(
-	      f"Welcome <@{member.id}> and thank you for joining us! We are now {member.guild.member_count} in this server !"
+	      f"Welcome <@{member.id}>, and thank you for joining us! We now have {member.guild.member_count} members in this server!"
 	  )
 
 
