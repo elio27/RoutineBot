@@ -14,12 +14,8 @@ client = discord.Client()
 
 def isdown():
   response = requests.get("https://routinehub.co/")
-   
-<<<<<<< HEAD
   return response.status_code != 200
-=======
-  return response.status_code != "200"
->>>>>>> origin/master
+
 
 
 async def check_status():
@@ -100,13 +96,7 @@ async def on_ready():
 @client.event
 async def on_member_join(member):
 	channel = client.get_channel(503976650996842507)
-	if channel.guild == member.guild:
-<<<<<<< HEAD
-	  await channel.send( f"Welcome <@{member.id}>, and thank you for joining us! We now have {member.guild.member_count} members in this server!"
-=======
-	  await channel.send(
-	      f"Welcome <@{member.id}>, and thank you for joining us! We now have {member.guild.member_count} members in this server!"
->>>>>>> origin/master
+	await channel.send( f"Welcome <@{member.id}>, and thank you for joining us! We now have {member.guild.member_count} members in this server!"
 	  )
 
 
