@@ -15,7 +15,11 @@ client = discord.Client()
 def isdown():
   response = requests.get("https://routinehub.co/")
    
+<<<<<<< HEAD
+  return response.status_code != 200
+=======
   return response.status_code != "200"
+>>>>>>> origin/master
 
 
 async def check_status():
@@ -97,8 +101,12 @@ async def on_ready():
 async def on_member_join(member):
 	channel = client.get_channel(503976650996842507)
 	if channel.guild == member.guild:
+<<<<<<< HEAD
+	  await channel.send( f"Welcome <@{member.id}>, and thank you for joining us! We now have {member.guild.member_count} members in this server!"
+=======
 	  await channel.send(
 	      f"Welcome <@{member.id}>, and thank you for joining us! We now have {member.guild.member_count} members in this server!"
+>>>>>>> origin/master
 	  )
 
 
@@ -144,7 +152,7 @@ async def on_message(message):
       embed.add_field(
           name="\n\n**Other commands :**",
           value=
-          "\n\n**!rh invite**\n*Returns the [link](https://bit.ly/rh-bot) to invite me on your server !*\n\n**!rh help**\n*Returns the help page you are reading*\n\n\n"
+          "\n\n**!rh invite**\n*Returns the [link](https://bit.ly/rh-bot) to invite me on your server !*\n\n**!rh help**\n*Returns the help page you are reading*\n\n**!rh register <username>**\nReplace '<username>' with your actual routinehub username. It will associate your discord ID with your routinehub account.\n**Note : **You should put two <discord> tags in your routinehub bio, like [this](https://media.discordapp.net/attachments/803406458220838913/832602360798642227/unknown.png?width=1428&height=954)\n\n\n"
       )
       embed.add_field(name="**Credits :**", value="Here is a little message to thank those who contributed to RoutineBot, one way or another, by reporting bugs or suggested improvements.\nI am talking about <@360097325730889730>, <@575317218955493376>, <@618082876730376202>, <@714777087801819237>, <@776983528821882911>, <@642358695652753418> and <@293502958950154240>.")
       embed.add_field(name="Other links:", value="[Github repo](https://github.com/elio27/RoutineBot)")
@@ -184,7 +192,7 @@ async def on_message(message):
         await message.channel.send(embed=embed)
   
 
-    elif message.content.startswith("!rh shortcut") and not message.content.startswith("!rh shortcuts"):
+    elif message.content.startswith("!rh shortcut "):
       rhid = message.content.replace("!rh shortcut ", "")
       loading = await message.channel.send("Routinebot is loading your request")
       async with message.channel.typing():
@@ -260,18 +268,30 @@ async def on_message(message):
     elif message.content.startswith("!rh user"):
       user = message.content.replace("!rh user ", "")
       if user:
-        if "<@!" in user:
+        if "<" in user:
             try:
                 id = re.findall("[0-9]*[0-9]", user)
                 id = id[0]
             except IndexError:
-                await message.channel.send("Error: You should ping or put the discord id of the user you want to look at.")
+                embed = discord.Embed(colour=discord.Colour(0x690a6))
+
+                embed.set_footer(text=footer(message), icon_url="https://cdn.discordapp.com/avatars/792855846240518174/946eb210985c413d6b1429d49f9168fc.png?size=512")
+
+                embed.add_field(name="<:error:805061336185831434> Error <:error:805061336185831434>", value="You should ping or put the discord id of the user you want to look at.\n\n")
+
+                await message.channel.send(embed=embed)
                 return 0
 
             if id in db.keys():
                 user = db[id]
             else:
-                await message.channel.send("Error: The user isn't registered in the database. Contact  <@!424188671332319233> if you want to be added to the database.")
+                embed = discord.Embed(colour=discord.Colour(0x690a6))
+
+                embed.set_footer(text=footer(message), icon_url="https://cdn.discordapp.com/avatars/792855846240518174/946eb210985c413d6b1429d49f9168fc.png?size=512")
+
+                embed.add_field(name="<:error:805061336185831434> Error <:error:805061336185831434>", value="The user isn't registered in the database. Take a look at `!rh help` page if you want to be added to the database.\n\n")
+
+                await message.channel.send(embed=embed)
                 return 0
     
         user_url = f"https://routinehub.co/user/{user}"
@@ -346,6 +366,33 @@ Error: Profile not found
 
           await message.channel.send(embed=embed)   
 
+    elif message.content.startswith("!rh register"):
+        user = re.findall("(?<=!rh register ).*", message.content)
+
+        if len(user):
+            user = user[0]
+            error = "Error: Profile not found"   
+            response = requests.get(f"https://routinehub.co/user/{user}")
+            if not error in response.text:
+                ex = '(?<=&lt;discord&gt;).*(?=&lt;/discord&gt;)'
+                id = re.findall(ex, response.text)
+                if len(id):
+                    id = int(id[0])
+                    if message.author.id == id:
+                        if not id in db.keys():
+                            db[id] = user
+                            await message.channel.send("You are successfully registered in the database")
+                        else:
+                            await message.channel.send("You are already registered in the database")
+                    else:
+                        await message.channel.send("Error: You don't have the same discord id as it's in the user bio.")
+                else:
+                    await message.channel.send("Error: this user doesn't have his discord ID in his bio.")
+            else:
+                await message.channel.send("Error : This user doesn't exist.")
+        else:
+            await message.channel.send("Error : You should enter a username.")
+
     elif message.content.startswith("!rh"):
       embed = discord.Embed(colour=discord.Colour(0x690a6))
 
@@ -397,8 +444,6 @@ Error: Profile not found
 
       await message.channel.send(file=file, embed=embed)
       os.remove("temp.png")
-
-
 
 
 keep_alive()
